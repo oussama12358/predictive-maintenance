@@ -1,0 +1,31 @@
+# =============================================================================
+# Dockerfile.dashboard — Streamlit Dashboard
+# =============================================================================
+# صورة منفصلة للداشبورد حتى نقدر نشغّله مستقلاً أو مع الـ API
+
+FROM python:3.11-slim-bookworm
+
+WORKDIR /app
+
+# نثبّت فقط المكتبات اللي يحتاجها الداشبورد
+RUN pip install --no-cache-dir \
+    streamlit==1.39.0 \
+    plotly==5.24.1 \
+    requests==2.32.3
+
+# ننسخ ملفات الداشبورد فقط
+COPY dashboard/ ./dashboard/
+
+# مستخدم غير root للأمان
+RUN groupadd --gid 1001 appgroup && \
+    useradd --uid 1001 --gid appgroup --no-create-home --shell /bin/false appuser
+USER appuser
+
+EXPOSE 8501
+
+# نشغّل Streamlit على كل الـ interfaces حتى يكون متاحاً من خارج الـ container
+CMD ["streamlit", "run", "dashboard/app.py", \
+     "--server.port=8501", \
+     "--server.address=0.0.0.0", \
+     "--server.headless=true", \
+     "--browser.gatherUsageStats=false"]

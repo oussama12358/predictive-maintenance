@@ -1,0 +1,47 @@
+version: "3.9"
+
+# =============================================================================
+# docker-compose.yml
+# =============================================================================
+# يشغّل خدمتين معاً:
+#   api       : FastAPI  على  http://localhost:8000
+#   dashboard : Streamlit على  http://localhost:8501
+#
+# الأوامر:
+#   docker compose up --build     <- أول تشغيل
+#   docker compose up             <- التشغيلات التالية
+#   docker compose down           <- إيقاف كل شيء
+#   docker compose logs -f api    <- متابعة لوغات الـ API
+# =============================================================================
+
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: pdm_api
+    ports:
+      - "8000:8000"
+    volumes:
+      # نربط مجلد الـ artifacts حتى نقدر نحدّث الموديل بدون إعادة بناء الصورة
+      - ./model/artifacts:/app/model/artifacts:ro
+    environment:
+      - LOG_LEVEL=INFO
+      - ENV=production
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: pdm_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+ 
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped

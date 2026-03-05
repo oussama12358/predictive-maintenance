@@ -1,0 +1,38 @@
+# =============================================================================
+# requirements.txt — Predictive Maintenance System
+# =============================================================================
+# All versions are pinned for reproducible builds.
+# Update versions intentionally — never use bare package names in production.
+#
+# To regenerate after updates:
+#   pip freeze > requirements.txt
+# =============================================================================
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic
+
+# ── ML core ───────────────────────────────────────────────────────────────────
+scikit-learn
+xgboost==2.1.1
+imbalanced-learn
+joblib==1.4.2
+
+# ── Data & Dataset ────────────────────────────────────────────────────────────
+numpy
+pandas
+ucimlrepo         # Auto-download AI4I 2020 from UCI ML Repository
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+streamlit
+plotly
+requests==2.32.3
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest
+httpx      # Required by FastAPI TestClient
+pytest-cov   # Coverage reporting
+
+# ── Dev utilities (exclude from production Docker image if needed) ────────────
+python-dotenv==1.0.1
