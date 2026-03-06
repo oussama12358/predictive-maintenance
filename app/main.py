@@ -52,6 +52,12 @@ app.add_middleware(
 )
 
 
+@app.get("/", tags=["Operations"])
+def home():
+    """Home endpoint providing API information."""
+    return {"message": "Predictive Maintenance API is running"}
+
+
 @app.get("/health", response_model=HealthResponse, tags=["Operations"])
 async def health_check():
     """Liveness probe — used by Docker HEALTHCHECK and K8s probes."""

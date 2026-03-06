@@ -7,6 +7,17 @@ Predicts the probability of machine failure within 7 days from real-time sensor 
 
 ## Architecture
 
+## System Architecture
+
+```mermaid
+flowchart LR
+    A[Sensor Data] --> B[Feature Engineering]
+    B --> C[XGBoost Model]
+    C --> D[FastAPI Inference Service]
+    D --> E[Prediction API]
+    E --> F[Streamlit Dashboard]
+    F --> G[User Monitoring Interface]
+```
 ```
 Data Generation → Feature Engineering → XGBoost Training → FastAPI Service → Streamlit Dashboard
                                               ↓
@@ -197,6 +208,21 @@ docker compose up --build
 ### GET /health
 
 Returns API liveness + model load status.
+
+---
+
+## Model Performance
+
+The model was evaluated using cross-validation and a hold-out test set.
+
+| Metric | Score |
+|------|------|
+| ROC-AUC | 0.9412 |
+| Precision | 0.71 |
+| Recall | 0.83 |
+| F2 Score | 0.79 |
+
+The threshold was optimized for **F2-score**, prioritizing recall to reduce the risk of missed failures in industrial environments.
 
 ---
 
