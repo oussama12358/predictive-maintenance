@@ -3,6 +3,12 @@
 A production-grade end-to-end ML system for industrial equipment failure prediction.
 Predicts the probability of machine failure within 7 days from real-time sensor readings.
 
+![Predictive Maintenance Demo](https://raw.githubusercontent.com/oussama12358/
+predictive-maintenance/main/assets/demo.gif)
+
+## Architecture
+System Architecture
+...
 ---
 
 ## Architecture
