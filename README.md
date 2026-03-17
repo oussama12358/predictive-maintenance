@@ -6,11 +6,6 @@ Predicts the probability of machine failure within 7 days from real-time sensor 
 ![Predictive Maintenance Demo](https://raw.githubusercontent.com/oussama12358/predictive-maintenance/main/assets/demo.gif)
 
 ## Architecture
-System Architecture
-...
----
-
-## Architecture
 
 ## System Architecture
 
