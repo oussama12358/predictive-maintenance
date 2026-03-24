@@ -286,36 +286,6 @@ predictive_maintenance/
 - Automatic timestamp tracking
 - Audit trail for all predictions and maintenance activities
 
-### Adding Your Own Screenshots
-
-To add real screenshots to this README:
-
-1. **Start the system:**
-   ```bash
-   # Terminal 1: Start API
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   
-   # Terminal 2: Start Dashboard  
-   streamlit run dashboard/app.py --server.port 8501
-   ```
-
-2. **Capture screenshots:**
-   - **Dashboard**: Visit `http://localhost:8501` and capture the main interface
-   - **API Docs**: Visit `http://localhost:8000/docs` and show the prediction endpoint
-   - **Model Training**: Run `python -m model.train` and capture the metrics output
-   - **Database**: Use a database tool to visualize the schema
-
-3. **Save images:**
-   - Place screenshots in `assets/` directory
-   - Use these exact filenames:
-     - `dashboard_overview.png`
-     - `swagger_docs.png` 
-     - `model_performance.png`
-     - `database_schema.png`
-   - Recommended size: 1200px width, PNG format
-
-4. **Update README:** The images will automatically appear once added to the `assets/` folder
-
 ---
 
 ## Quickstart (Windows Native)
