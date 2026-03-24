@@ -78,11 +78,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 
 # Uvicorn production config:
 #   --workers 2        : 2 worker processes (CPU-bound; adjust to core count)
-#   --host 0.0.0.0     : Accept connections from outside the container
+#   --host 127.0.0.1     : Accept connections from outside the container
 #   --no-access-log    : Disable uvicorn's own access log (we use structured logging)
 #   --log-level warning: Only warnings+ from uvicorn itself
 CMD ["uvicorn", "app.main:app", \
-     "--host", "0.0.0.0", \
+     "--host", "127.0.0.1", \
      "--port", "8000", \
      "--workers", "2", \
      "--no-access-log", \

@@ -30,6 +30,6 @@ EXPOSE 8501
 # Run Streamlit on all interfaces so it is accessible outside the container
 CMD ["streamlit", "run", "dashboard/app.py", \
      "--server.port=8501", \
-     "--server.address=0.0.0.0", \
+     "--server.address=127.0.0.1", \
      "--server.headless=true", \
      "--browser.gatherUsageStats=false"]
