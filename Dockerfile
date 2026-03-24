@@ -60,6 +60,7 @@ COPY --from=builder /install /usr/local
 COPY app/      ./app/
 COPY model/    ./model/
 COPY data/     ./data/
+COPY database/ ./database/
 
 # Create non-root user (uid 1001 avoids conflicts with common system uids)
 RUN groupadd --gid 1001 appgroup && \

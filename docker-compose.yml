@@ -3,18 +3,32 @@ version: "3.9"
 # =============================================================================
 # docker-compose.yml
 # =============================================================================
-# يشغّل خدمتين معاً:
-#   api       : FastAPI  على  http://localhost:8000
-#   dashboard : Streamlit على  http://localhost:8501
+# Runs three services together:
+#   db        : PostgreSQL database
+#   api       : FastAPI on http://localhost:8000
+#   dashboard : Streamlit on http://localhost:8501
 #
-# الأوامر:
-#   docker compose up --build     <- أول تشغيل
-#   docker compose up             <- التشغيلات التالية
-#   docker compose down           <- إيقاف كل شيء
-#   docker compose logs -f api    <- متابعة لوغات الـ API
+# Commands:
+#   docker compose up --build     <- First run
+#   docker compose up             <- Subsequent runs
+#   docker compose down           <- Stop everything
+#   docker compose logs -f api    <- Follow API logs
 # =============================================================================
 
 services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: pdm_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pdm_db}
+      POSTGRES_USER: ${POSTGRES_USER:-pdm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pdm_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   api:
     build:
@@ -25,11 +39,15 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # نربط مجلد الـ artifacts حتى نقدر نحدّث الموديل بدون إعادة بناء الصورة
+      # Mount the artifacts folder so we can update the model without rebuilding the image
       - ./model/artifacts:/app/model/artifacts:ro
     environment:
       - LOG_LEVEL=INFO
       - ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-pdm_user}:${POSTGRES_PASSWORD:-pdm_pass}@db:5432/${POSTGRES_DB:-pdm_db}
+      - PYTHONPATH=/app
+    depends_on:
+      - db
     restart: unless-stopped
 
   dashboard:
@@ -40,8 +58,11 @@ services:
     ports:
       - "8501:8501"
     environment:
- 
+
       - API_URL=http://api:8000
     depends_on:
       - api
     restart: unless-stopped
+
+volumes:
+  postgres_data:

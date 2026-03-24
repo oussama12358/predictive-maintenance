@@ -16,12 +16,21 @@ import os
 import requests
 import streamlit as st
 import plotly.graph_objects as go
+import pandas as pd
 from typing import Optional
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(dotenv_path=Path(".env"))
 
 # ── Config ────────────────────────────────────────────────────────────────────
-API_URL     = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 PREDICT_URL = f"{API_URL}/predict_failure"
 HEALTH_URL  = f"{API_URL}/health"
+STATS_URL   = f"{API_URL}/predictions/stats"
+RECENT_URL  = f"{API_URL}/predictions/recent"
+TREND_URL   = f"{API_URL}/predictions/trend"
+HIGHRISK_URL= f"{API_URL}/predictions/high-risk"
 
 RISK_COLORS = {
     "Low":    "#22c55e",   # Green
@@ -378,7 +387,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # Show sample risk levels reference
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -393,3 +401,76 @@ else:
         st.markdown("""<div class="risk-banner risk-high">🔴 HIGH RISK<br>
         <span style="font-size:0.75rem;font-weight:400">Probability &gt; 65%<br>Immediate action</span></div>""",
         unsafe_allow_html=True)
+
+# ── Database History Tab ───────────────────────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("---")
+st.markdown('<div style="font-family:IBM Plex Mono,monospace;color:#38bdf8;font-size:1rem;font-weight:600;margin-bottom:16px;">📊 DATABASE — PREDICTION HISTORY</div>', unsafe_allow_html=True)
+
+tab1, tab2, tab3 = st.tabs(["📈 Statistics", "🕐 Recent Predictions", "🚨 High Risk Alerts"])
+
+with tab1:
+    try:
+        stats = requests.get(STATS_URL, timeout=5).json()
+        s1, s2, s3, s4, s5 = st.columns(5)
+        with s1:
+            st.metric("Total Predictions", stats.get("total", 0))
+        with s2:
+            st.metric("🔴 High Risk",   stats.get("high_risk", 0))
+        with s3:
+            st.metric("🟡 Medium Risk", stats.get("medium_risk", 0))
+        with s4:
+            st.metric("🟢 Low Risk",    stats.get("low_risk", 0))
+        with s5:
+            st.metric("Avg Probability", f"{stats.get('avg_probability', 0):.1%}")
+
+        # Trend chart
+        trend_data = requests.get(f"{TREND_URL}?days=7", timeout=5).json()
+        if isinstance(trend_data, list) and trend_data:
+            df = pd.DataFrame(trend_data)
+            df['date'] = pd.to_datetime(df['date'])
+            df['count'] = df['count'].astype(int)
+            pivot = df.pivot_table(index='date', columns='risk_level', values='count', aggfunc='sum', fill_value=0)
+            pivot = pivot.reindex(columns=['Low', 'Medium', 'High'], fill_value=0)
+            st.area_chart(pivot, height=300)
+        else:
+            st.warning("No trend data available yet; make some predictions to populate the chart.")
+
+    except Exception as e:
+        st.error(f"Dashboard statistics error: {e}")
+
+with tab2:
+    try:
+        recent = requests.get(f"{RECENT_URL}?limit=20", timeout=5).json()
+        if isinstance(recent, list) and recent:
+            df = pd.DataFrame(recent)
+            st.dataframe(df[['timestamp', 'machine_id', 'risk_level', 'failure_probability']].rename(columns={
+                'timestamp': 'Timestamp',
+                'machine_id': 'Machine ID',
+                'risk_level': 'Risk Level',
+                'failure_probability': 'Failure Probability'
+            }))
+        else:
+            st.warning("No recent predictions found yet. Trigger prediction from the left panel or through /predict_failure.")
+    except Exception as e:
+        st.error(f"Dashboard recent predictions error: {e}")
+
+with tab3:
+    try:
+        high_risk = requests.get(f"{HIGHRISK_URL}?hours=24", timeout=5).json()
+        if high_risk:
+            for alert in high_risk:
+                st.markdown(
+                    f'<div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;'
+                    f'padding:12px;margin-bottom:8px;">'
+                    f'<span style="color:#f87171;font-family:IBM Plex Mono,monospace;font-weight:700">'
+                    f'🚨 {alert["machine_id"]}</span>'
+                    f'<span style="color:#94a3b8;font-size:0.8rem;margin-left:16px">{alert["timestamp"]}</span><br>'
+                    f'<span style="color:#fca5a5;font-size:0.85rem">{alert["recommendation"]}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+        else:
+            st.success(" No HIGH RISK alerts in the last 24 hours.")
+    except Exception:
+        st.info("No data available.")

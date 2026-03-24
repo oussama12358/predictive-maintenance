@@ -22,7 +22,7 @@ joblib==1.4.2
 # ── Data & Dataset ────────────────────────────────────────────────────────────
 numpy
 pandas
-ucimlrepo         # Auto-download AI4I 2020 from UCI ML Repository
+ucimlrepo      # Auto-download AI4I 2020 from UCI ML Repository
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 streamlit
@@ -32,7 +32,11 @@ requests==2.32.3
 # ── Testing ───────────────────────────────────────────────────────────────────
 pytest
 httpx      # Required by FastAPI TestClient
-pytest-cov   # Coverage reporting
+pytest-cov    # Coverage reporting
 
-# ── Dev utilities (exclude from production Docker image if needed) ────────────
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.47          # ORM — SQLite (dev) and PostgreSQL (prod)
+psycopg2-binary      # For PostgreSQL in production
+
+# ── Dev utilities ─────────────────────────────────────────────────────────────
 python-dotenv==1.0.1

@@ -16,6 +16,7 @@ htmlcov/
 *.pkl
 *.json
 data/raw/
+data/*.db
 model/artifacts/
 .DS_Store
 Thumbs.db

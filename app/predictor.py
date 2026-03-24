@@ -1,31 +1,22 @@
-"""
-app/predictor.py
-----------------
-Handles artifact loading and single-sample inference.
-
-Design principles:
-  - Artifacts are loaded ONCE at startup (not per request) — critical for latency
-  - Uses the shared features.py module to prevent training-serving skew
-  - Returns structured result dict (not raw floats) for clean API layer
-  - Risk level thresholds and recommendations are data-driven, not hardcoded strings
-"""
-
 import json
+import os
 import joblib
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
 
 from model.features import engineer_features, get_feature_columns
 from app.schemas import RiskLevel
 
+load_dotenv(dotenv_path=Path(".env"))
 
-# ── Artifact paths ────────────────────────────────────────────────────────────
-MODEL_PATH     = Path("model/artifacts/model.pkl")
-SCALER_PATH    = Path("model/artifacts/scaler.pkl")
-THRESHOLD_PATH = Path("model/artifacts/threshold.json")
-MODEL_VERSION  = "xgb-v1.0"
+# ── Artifact paths — read from .env with fallback defaults ────────────────────
+MODEL_PATH     = Path(os.getenv("MODEL_PATH",     "model/artifacts/model.pkl"))
+SCALER_PATH    = Path(os.getenv("SCALER_PATH",    "model/artifacts/scaler.pkl"))
+THRESHOLD_PATH = Path(os.getenv("THRESHOLD_PATH", "model/artifacts/threshold.json"))
+MODEL_VERSION  = os.getenv("MODEL_VERSION", "xgb-v1.0")
 
 # ── Risk level bands (probability ranges) ─────────────────────────────────────
 RISK_BANDS = {
