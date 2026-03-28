@@ -1,9 +1,16 @@
 # Predictive Maintenance System
 
 A production-grade end-to-end ML system for industrial equipment failure prediction.
-Predicts the probability of machine failure within 7 days from real-time sensor readings.
+Predicts the probability of machine failure within the next 7 days based on sensor data.
 
-## Architecture
+## Key Highlights
+
+- End-to-end ML system (training → deployment → monitoring)
+- Production-ready FastAPI service
+- SQL-backed prediction tracking & analytics
+- Robustness evaluation (bootstrap)
+- Dockerized deployment
+
 ## System Architecture
 
 ```mermaid
@@ -113,7 +120,7 @@ Expected output:
 [4/7] Applying SMOTE to training set...
 [6/7] Training XGBoost classifier...
    CV ROC-AUC: 0.9380 +/- 0.0091
-   Optimal threshold (F2): 0.2214
+   Optimal threshold (F2): 0.76
    ROC-AUC: 0.9412
 ✅ Pipeline complete. All artifacts saved.
 ```
@@ -196,7 +203,7 @@ docker compose up --build
   "machine_id":          "MIL-0042",
   "failure_probability": 0.0821,
   "risk_level":          "Low",
-  "threshold_used":      0.2214,
+  "threshold_used":      0.76,
   "recommendation":      "No immediate action required. Continue normal monitoring.",
   "top_risk_factors": [
     "wear_torque_interaction: 4622.4  (importance: 0.287)",
@@ -333,14 +340,23 @@ Daily risk level counts for trend analysis (dashboard charts).
 
 The model was evaluated using cross-validation and a hold-out test set.
 
-| Metric | Score |
-|------|------|
-| ROC-AUC | 0.9412 |
-| Precision | 0.71 |
-| Recall | 0.83 |
-| F2 Score | 0.79 |
+| Metric | Validation | Test |
+|--------|-----------|------|
+| ROC-AUC | 0.9743 | 0.9784 |
+| Avg Precision | 0.8514 | 0.8572 |
+| F2 Score | 0.7843 | 0.7692 |
 
 The threshold was optimized for **F2-score**, prioritizing recall to reduce the risk of missed failures in industrial environments.
+
+## Robustness Evaluation
+
+The model stability was evaluated using bootstrap resampling on the test set:
+
+- F2 mean: 0.7673  
+- Std: 0.0317  
+- 95% CI: [0.7080, 0.8367]  
+
+Result: The model shows acceptable stability with minor sensitivity to data distribution shifts.
 
 ---
 
