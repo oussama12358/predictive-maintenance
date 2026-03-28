@@ -24,17 +24,17 @@ Run:
 import joblib
 import numpy as np
 import pandas as pd
-import warnings
 from pathlib import Path
 
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import SMOTE
 from xgboost import XGBClassifier
 
 from data.Load_ai4i import load_from_csv, clean_and_standardize
 from model.features import engineer_features, get_feature_columns, get_target_column
-from model.evaluate import find_optimal_threshold, evaluate_model, save_threshold
+from model.evaluate import find_optimal_threshold, evaluate_model, save_threshold, bootstrap_threshold_robustness
 
 
 # ── Config ───────────────────────────────────────────────────────────────────
@@ -48,21 +48,24 @@ TEST_SIZE        = 0.20   # 80/20 split
 VAL_SIZE         = 0.15   # 15% of full data used as validation (from training split)
 
 # XGBoost hyperparameters — tuned for imbalanced binary classification
+# Note: use_label_encoder removed (deprecated in XGBoost 3.x)
+# Note: n_jobs=1 for cross_val_score to avoid joblib serialization warnings on Windows
 XGBOOST_PARAMS = {
-    "n_estimators":       400,
-    "max_depth":          5,
-    "learning_rate":      0.05,
-    "subsample":          0.8,
-    "colsample_bytree":   0.8,
-    "min_child_weight":   3,
-    "gamma":              0.1,
-    "reg_alpha":          0.1,
-    "reg_lambda":         1.0,
-    "scale_pos_weight":   1,      # We handle imbalance with SMOTE; keep neutral here
-    "eval_metric":        "aucpr",
-    "random_state":       RANDOM_SEED,
-    "n_jobs":             -1,
-    "tree_method":        "hist", # Fast on CPU, required for GPU compatibility
+    "n_estimators":     400,
+    "max_depth":        5,
+    "learning_rate":    0.05,
+    "subsample":        0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 3,
+    "gamma":            0.1,
+    "reg_alpha":        0.1,
+    "reg_lambda":       1.0,
+    "scale_pos_weight": 1,
+    "eval_metric":      "aucpr",
+    "objective":        "binary:logistic",   # explicit — ensures sklearn sees classifier
+    "random_state":     RANDOM_SEED,
+    "n_jobs":           1,
+    "tree_method":      "hist",
 }
 
 
@@ -140,22 +143,27 @@ def run_training_pipeline() -> None:
 
     # ── 6. Cross-validation sanity check ─────────────────────────────────────
     print("\n[6/7] Training XGBoost classifier...")
-    # silence noisy warnings that are harmless but clutter output
-    warnings.filterwarnings("ignore", message=".*use_label_encoder.*")
-    warnings.filterwarnings("ignore", message=".*response_method=predict_proba.*")
     model = XGBClassifier(**XGBOOST_PARAMS)
-    # xgboost's sklearn wrapper sometimes misreports its estimator type;
-    # force it to be recognised as a classifier so cross_val_score doesn't
-    # complain about a "regressor with response_method=predict_proba".
-    model._estimator_type = "classifier"
 
+    # Manual CV loop — fully compatible with sklearn 1.7.2 + XGBoost 3.x
+    # cross_val_score + make_scorer API changed in sklearn 1.7 / XGBoost 3.x
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_SEED)
-    # cross‑val using the standard roc_auc string now that the estimator
-    # reports itself correctly
-    cv_scores = cross_val_score(
-        model, X_train_scaled, y_train_resampled,
-        cv=cv, scoring="roc_auc", n_jobs=-1
-    )
+    cv_scores = []
+    for fold, (train_idx, val_idx) in enumerate(cv.split(X_train_scaled, y_train_resampled)):
+        X_fold_train = X_train_scaled[train_idx]
+        y_fold_train = y_train_resampled[train_idx] if hasattr(y_train_resampled, '__getitem__') \
+                       else np.array(y_train_resampled)[train_idx]
+        X_fold_val   = X_train_scaled[val_idx]
+        y_fold_val   = y_train_resampled[val_idx] if hasattr(y_train_resampled, '__getitem__') \
+                       else np.array(y_train_resampled)[val_idx]
+
+        fold_model = XGBClassifier(**XGBOOST_PARAMS)
+        fold_model.fit(X_fold_train, y_fold_train, verbose=False)
+        y_proba = fold_model.predict_proba(X_fold_val)[:, 1]
+        score = roc_auc_score(y_fold_val, y_proba)
+        cv_scores.append(score)
+
+    cv_scores = np.array(cv_scores)
     print(f"   CV ROC-AUC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
     # Final fit on full resampled training data
@@ -178,6 +186,20 @@ def run_training_pipeline() -> None:
     evaluate_model(y_val.values,  val_proba,  threshold, dataset_name="Validation")
     evaluate_model(y_test.values, test_proba, threshold, dataset_name="Test (Hold-out)")
 
+    # ── Bootstrap robustness check ────────────────────────────────────────────
+    # Addresses Bastien's remark: verify the rounded threshold is stable
+    # across random subsets of the test set before saving it.
+    print("\n   Running bootstrap robustness check on test set...")
+    robustness = bootstrap_threshold_robustness(
+        y_true          = y_test.values,
+        y_proba         = test_proba,
+        threshold       = threshold,
+        n_iterations    = 200,
+        subsample_ratio = 0.70,
+        beta            = 2.0,
+        random_seed     = RANDOM_SEED,
+    )
+
     # ── Feature importance ────────────────────────────────────────────────────
     importances = model.feature_importances_
     feat_importance_df = pd.DataFrame({
@@ -193,12 +215,12 @@ def run_training_pipeline() -> None:
 
     joblib.dump(model,  MODEL_ARTIFACT)
     joblib.dump(scaler, SCALER_ARTIFACT)
-    save_threshold(threshold, THRESHOLD_ARTIFACT)
+    save_threshold(threshold, robustness=robustness, output_path=THRESHOLD_ARTIFACT)
 
     print(f"\n   Model saved   : {MODEL_ARTIFACT}")
     print(f"   Scaler saved  : {SCALER_ARTIFACT}")
     print(f"   Threshold saved: {THRESHOLD_ARTIFACT}")
-    print("\n Pipeline complete. All artifacts saved.\n")
+    print("\n✅ Pipeline complete. All artifacts saved.\n")
 
 
 if __name__ == "__main__":
