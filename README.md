@@ -26,12 +26,16 @@ flowchart LR
 Data Generation → Feature Engineering → XGBoost Training → FastAPI Service → Streamlit Dashboard
                                               ↓
                                       model/artifacts/
+
                                       ├── model.pkl
+
                                       ├── scaler.pkl
+
                                       └── threshold.json
 ```
 
 ## Project Structure
+
 
 predictive_maintenance/
 ├── app/                    # FastAPI inference service
