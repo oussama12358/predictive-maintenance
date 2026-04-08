@@ -33,7 +33,6 @@ Data Generation → Feature Engineering → XGBoost Training → FastAPI Service
 
 ## Project Structure
 
-```
 predictive_maintenance/
 ├── app/                    # FastAPI inference service
 │   ├── main.py             # Routes and lifespan
