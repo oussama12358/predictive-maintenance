@@ -23,23 +23,14 @@ flowchart LR
     F --> G[Streamlit Dashboard]
     G --> H[User Monitoring Interface]
 ```
-Pipeline Overview:
+## Pipeline Overview
 
-Data Generation
-    ↓
-Feature Engineering
-    ↓
-Model Training (XGBoost)
-    ↓
-FastAPI Inference Service
-    ↓
-Streamlit Dashboard
-
-Artifacts:
-model/artifacts/
-├── model.pkl
-├── scaler.pkl
-└── threshold.json
+```mermaid
+flowchart LR
+    A[Data Generation] --> B[Feature Engineering]
+    B --> C[XGBoost Training]
+    C --> D[FastAPI Service]
+    D --> E[Dashboard]
 ```
 
 ## Project Structure
