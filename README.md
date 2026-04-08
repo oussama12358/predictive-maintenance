@@ -35,28 +35,29 @@ flowchart LR
 
 ## Project Structure
 
+```bash
 predictive_maintenance/
-├── app/                    # FastAPI inference service
-│   ├── main.py             # Routes and lifespan
-│   ├── schemas.py          # Pydantic I/O models
-│   ├── predictor.py        # Model loading + inference
-│   └── logger.py           # JSON structured logging
-├── database/               # Database layer
-│   ├── models.py           # SQLAlchemy ORM models
-│   ├── crud.py             # Database operations
-│   ├── connection.py       # Database configuration
-│   └── init.py             # Database initialization
-├── model/                  # ML pipeline
-│   ├── train.py            # Full training pipeline
-│   ├── features.py         # Feature engineering (shared)
-│   └── evaluate.py         # Metrics + threshold selection
+├── app/
+│   ├── main.py
+│   ├── schemas.py
+│   ├── predictor.py
+│   └── logger.py
+├── database/
+│   ├── models.py
+│   ├── crud.py
+│   ├── connection.py
+│   └── init.py
+├── model/
+│   ├── train.py
+│   ├── features.py
+│   └── evaluate.py
 ├── data/
-│   └── generate_dataset.py # Synthetic dataset generator
+│   └── generate_dataset.py
 ├── dashboard/
-│   └── app.py              # Streamlit UI
+│   └── app.py
 ├── tests/
-│   ├── test_api.py         # API integration tests
-│   └── test_pipeline.py    # Pipeline unit tests
+│   ├── test_api.py
+│   └── test_pipeline.py
 ├── Dockerfile
 ├── docker-compose.yml
 └── requirements.txt
