@@ -23,19 +23,26 @@ flowchart LR
     F --> G[Streamlit Dashboard]
     G --> H[User Monitoring Interface]
 ```
-Data Generation → Feature Engineering → XGBoost Training → FastAPI Service → Streamlit Dashboard
-                                              ↓
-                                      model/artifacts/
+Pipeline Overview:
 
-                                      ├── model.pkl
+Data Generation
+    ↓
+Feature Engineering
+    ↓
+Model Training (XGBoost)
+    ↓
+FastAPI Inference Service
+    ↓
+Streamlit Dashboard
 
-                                      ├── scaler.pkl
-
-                                      └── threshold.json
+Artifacts:
+model/artifacts/
+├── model.pkl
+├── scaler.pkl
+└── threshold.json
 ```
 
 ## Project Structure
-
 
 predictive_maintenance/
 ├── app/                    # FastAPI inference service
