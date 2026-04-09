@@ -157,17 +157,17 @@ def get_prediction_stats(db: Session) -> dict:
 
 def get_risk_trend(db: Session, days: int = 7) -> list:
     """
-    Returns daily risk level counts for the last N days.
+    Returns hourly risk level counts for the last N days.
     Used for the trend chart in the dashboard.
     """
     since = datetime.now(timezone.utc) - timedelta(days=days)
     results = db.query(
-        func.date(Prediction.timestamp).label("date"),
+        func.strftime('%Y-%m-%d %H', Prediction.timestamp).label("date"),
         Prediction.risk_level,
         func.count(Prediction.id).label("count")
     ).filter(Prediction.timestamp >= since)\
-     .group_by(func.date(Prediction.timestamp), Prediction.risk_level)\
-     .order_by("date").all()
+     .group_by(func.strftime('%Y-%m-%d %H', Prediction.timestamp), Prediction.risk_level)\
+     .order_by(func.strftime('%Y-%m-%d %H', Prediction.timestamp)).all()
 
     return [{"date": str(r.date), "risk_level": r.risk_level, "count": r.count}
             for r in results]

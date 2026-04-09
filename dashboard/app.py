@@ -425,15 +425,20 @@ with tab1:
             st.metric("Avg Probability", f"{stats.get('avg_probability', 0):.1%}")
 
         # Trend chart
-        trend_data = requests.get(f"{TREND_URL}?days=7", timeout=5).json()
-        if isinstance(trend_data, list) and trend_data:
-            df = pd.DataFrame(trend_data)
-            df['date'] = pd.to_datetime(df['date'])
-            df['count'] = df['count'].astype(int)
-            pivot = df.pivot_table(index='date', columns='risk_level', values='count', aggfunc='sum', fill_value=0)
-            pivot = pivot.reindex(columns=['Low', 'Medium', 'High'], fill_value=0)
-            st.area_chart(pivot, height=300)
-        else:
+        try:
+            recent = requests.get(f"{RECENT_URL}?limit=50", timeout=5).json()
+            if isinstance(recent, list) and recent:
+                df = pd.DataFrame(recent)
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df = df.sort_values('timestamp')
+                df['hour'] = df['timestamp'].dt.floor('H')
+                hourly = df.groupby(['hour', 'risk_level']).size().reset_index(name='count')
+                pivot = hourly.pivot_table(index='hour', columns='risk_level', values='count', aggfunc='sum', fill_value=0)
+                pivot = pivot.reindex(columns=['Low', 'Medium', 'High'], fill_value=0)
+                st.area_chart(pivot, height=300)
+            else:
+                st.warning("No trend data available yet; make some predictions to populate the chart.")
+        except Exception as e:
             st.warning("No trend data available yet; make some predictions to populate the chart.")
 
     except Exception as e:
